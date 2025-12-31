@@ -581,6 +581,7 @@ export const APIStatusDashboard: React.FC = () => {
   const [showRecentApis, setShowRecentApis] = useState(true);
   const [showAllResults, setShowAllResults] = useState(false);
   const [highlightMode, setHighlightMode] = useState<HighlightMode>('green');
+  const [selectedTrendCategory, setSelectedTrendCategory] = useState('all');
 
   const { summary, categories, recent_apis, features, timeline } = stats;
   const categoryOptions = ['all', ...Object.keys(categories)];
@@ -1117,17 +1118,34 @@ export const APIStatusDashboard: React.FC = () => {
           )}
 
           {/* Trend Chart Card */}
-          {timeline && timeline.length >= 2 && (
+          {timeline && timeline['all'] && timeline['all'].length >= 2 && (
             <Card>
               <CardHeader className="px-4 py-2">
-                <CardTitle className="flex gap-2 items-center text-sm font-medium">
-                  <TrendingUpIcon className="w-4 h-4 text-primary" />
-                  {t.parityOverTime}
+                <CardTitle className="flex justify-between items-center text-sm font-medium">
+                  <div className="flex gap-2 items-center">
+                    <TrendingUpIcon className="w-4 h-4 text-primary" />
+                    {t.parityOverTime}
+                  </div>
+                  <Select
+                    value={selectedTrendCategory}
+                    onValueChange={setSelectedTrendCategory}
+                  >
+                    <SelectTrigger className="h-6 text-[10px] w-[120px]">
+                      <SelectValue placeholder={t.category} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryOptions.map((c) => (
+                        <SelectItem key={c} value={c} className="text-xs">
+                          {c === 'all' ? t.all : CATEGORY_DISPLAY_NAMES[c] || c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-2 pt-0 pb-2">
                 <ParityChart
-                  timeline={timeline}
+                  timeline={timeline[selectedTrendCategory] || []}
                   selectedPlatforms={selectedPlatforms}
                 />
               </CardContent>

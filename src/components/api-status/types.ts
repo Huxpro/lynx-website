@@ -90,5 +90,5 @@ export interface APIStats {
   categories: Record<string, CategoryDetail>;
   recent_apis: RecentAPI[];
   features?: FeatureInfo[];
-  timeline?: TimelinePoint[];
+  timeline?: Record<string, TimelinePoint[]>;
 }

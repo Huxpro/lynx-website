@@ -138,7 +138,7 @@ interface APIStats {
   categories: Record<string, CategoryDetail>;
   recent_apis: RecentAPI[];
   features: FeatureInfo[];
-  timeline: TimelinePoint[];
+  timeline: Record<string, TimelinePoint[]>;
 }
 
 const dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -674,7 +674,21 @@ function generateStats(): APIStats {
 
   // Load version history and calculate timeline
   const versionHistory = loadVersionHistory();
-  const timeline = calculateTimeline(allFeatures, versionHistory);
+  const timeline: Record<string, TimelinePoint[]> = {};
+
+  // Global timeline
+  timeline['all'] = calculateTimeline(allFeatures, versionHistory);
+
+  // Category timelines
+  for (const { path: categoryPath } of CATEGORIES) {
+    const categoryFeatures = allFeatures.filter(
+      (f) => f.category === categoryPath,
+    );
+    timeline[categoryPath] = calculateTimeline(
+      categoryFeatures,
+      versionHistory,
+    );
+  }
 
   const stats: APIStats = {
     generated_at: new Date().toISOString(),
@@ -692,7 +706,7 @@ function generateStats(): APIStats {
   console.log(`\nSummary:`);
   console.log(`  Total APIs: ${globalTotal}`);
   console.log(`  Features: ${allFeatures.length}`);
-  console.log(`  Timeline points: ${timeline.length}`);
+  console.log(`  Timeline points: ${timeline['all'].length}`);
   console.log(`\n  Native Platforms:`);
   for (const platform of [
     'android',
