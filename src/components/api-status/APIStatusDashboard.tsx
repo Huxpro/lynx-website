@@ -574,6 +574,7 @@ export const APIStatusDashboard: React.FC = () => {
   ]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [trendCategory, setTrendCategory] = useState('all');
   const [stateFilter, setStateFilter] = useState<
     'all' | 'supported' | 'unsupported'
   >('all');
@@ -581,7 +582,6 @@ export const APIStatusDashboard: React.FC = () => {
   const [showRecentApis, setShowRecentApis] = useState(true);
   const [showAllResults, setShowAllResults] = useState(false);
   const [highlightMode, setHighlightMode] = useState<HighlightMode>('green');
-  const [selectedTrendCategory, setSelectedTrendCategory] = useState('all');
 
   const { summary, categories, recent_apis, features, timeline } = stats;
   const categoryOptions = ['all', ...Object.keys(categories)];
@@ -1126,26 +1126,30 @@ export const APIStatusDashboard: React.FC = () => {
                     <TrendingUpIcon className="w-4 h-4 text-primary" />
                     {t.parityOverTime}
                   </div>
-                  <Select
-                    value={selectedTrendCategory}
-                    onValueChange={setSelectedTrendCategory}
-                  >
-                    <SelectTrigger className="h-6 text-[10px] w-[120px]">
-                      <SelectValue placeholder={t.category} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoryOptions.map((c) => (
-                        <SelectItem key={c} value={c} className="text-xs">
-                          {c === 'all' ? t.all : CATEGORY_DISPLAY_NAMES[c] || c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="w-[120px]">
+                    <Select
+                      value={trendCategory}
+                      onValueChange={setTrendCategory}
+                    >
+                      <SelectTrigger className="h-6 text-[10px] px-2 min-h-0">
+                        <SelectValue placeholder={t.category} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.map((c) => (
+                          <SelectItem key={c} value={c} className="text-xs">
+                            {c === 'all'
+                              ? t.all
+                              : CATEGORY_DISPLAY_NAMES[c] || c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-2 pt-0 pb-2">
                 <ParityChart
-                  timeline={timeline[selectedTrendCategory] || []}
+                  timeline={timeline[trendCategory] || []}
                   selectedPlatforms={selectedPlatforms}
                 />
               </CardContent>

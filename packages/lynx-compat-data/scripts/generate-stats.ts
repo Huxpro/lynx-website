@@ -674,20 +674,23 @@ function generateStats(): APIStats {
 
   // Load version history and calculate timeline
   const versionHistory = loadVersionHistory();
-  const timeline: Record<string, TimelinePoint[]> = {};
+  const globalTimeline = calculateTimeline(allFeatures, versionHistory);
 
-  // Global timeline
-  timeline['all'] = calculateTimeline(allFeatures, versionHistory);
+  // Calculate timeline per category
+  const timelines: Record<string, TimelinePoint[]> = {
+    all: globalTimeline,
+  };
 
-  // Category timelines
   for (const { path: categoryPath } of CATEGORIES) {
     const categoryFeatures = allFeatures.filter(
       (f) => f.category === categoryPath,
     );
-    timeline[categoryPath] = calculateTimeline(
-      categoryFeatures,
-      versionHistory,
-    );
+    if (categoryFeatures.length > 0) {
+      timelines[categoryPath] = calculateTimeline(
+        categoryFeatures,
+        versionHistory,
+      );
+    }
   }
 
   const stats: APIStats = {
@@ -700,13 +703,13 @@ function generateStats(): APIStats {
     categories,
     recent_apis: allRecentAPIs.slice(0, 100),
     features: allFeatures,
-    timeline,
+    timeline: timelines,
   };
 
   console.log(`\nSummary:`);
   console.log(`  Total APIs: ${globalTotal}`);
   console.log(`  Features: ${allFeatures.length}`);
-  console.log(`  Timeline points: ${timeline['all'].length}`);
+  console.log(`  Timeline points (global): ${globalTimeline.length}`);
   console.log(`\n  Native Platforms:`);
   for (const platform of [
     'android',

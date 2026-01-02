@@ -282,7 +282,7 @@ export const CoveragePage: React.FC<CoveragePageProps> = ({
       </div>
 
       {/* Trend Chart */}
-      {timeline && timeline.length >= 2 && (
+      {timeline && timeline['all'] && timeline['all'].length >= 2 && (
         <Card>
           <CardHeader className="py-2 px-4">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -309,7 +309,7 @@ export const CoveragePage: React.FC<CoveragePageProps> = ({
           </CardHeader>
           <CardContent className="pt-0 px-2 pb-2">
             <ParityChart
-              timeline={timeline}
+              timeline={timeline['all']}
               selectedPlatforms={selectedPlatforms}
             />
             {/* Bottom figures - Platform Legend */}
