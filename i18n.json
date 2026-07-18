@@ -763,6 +763,18 @@
     "en": "or",
     "zh": "或"
   },
+  "go.ultra": {
+    "en": "Open frameless",
+    "zh": "打开无边框预览"
+  },
+  "go.ultra.exit": {
+    "en": "Exit frameless",
+    "zh": "退出无边框预览"
+  },
+  "go.refresh": {
+    "en": "Refresh",
+    "zh": "刷新"
+  },
   "all_versions": {
     "en": "All versions",
     "zh": "所有版本"
