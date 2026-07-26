@@ -1,7 +1,9 @@
 :root[data-subsite='react'],
-:root[data-subsite='rspeedy'] {
+:root[data-subsite='rspeedy'],
+:root[data-subsite='lynxtron'] {
   .hero-title {
-    animation: fade-in 0.8s ease-out;
+    // Keep hero title opaque on first paint — do not fade in from opacity: 0
+    // (that blanked the LCP text until CSS animation / hydration finished).
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word;
@@ -28,7 +30,6 @@
       background-clip: text;
       animation:
         blink-caret 1s cubic-bezier(1, 0, 0, 1) infinite,
-        fade-in 0.8s ease-out,
         gradientMove 6s linear infinite;
     }
     .normal {
@@ -38,6 +39,14 @@
       background-color: var(--hero-normal-text-color);
     }
   }
+}
+
+// Lynxtron wordmark: "Lynx" stays in the normal text color, "tron" takes
+// the subsite brand green (the shared .brand rule above uses
+// --second-brand-color, which lynxtron inherits as the guide cyan).
+:root[data-subsite='lynxtron'] .hero-title .brand {
+  color: var(--rp-c-brand);
+  background-color: var(--rp-c-brand);
 }
 
 :root[data-subsite='guide'] {
@@ -57,7 +66,6 @@
     margin-right: -4px;
     animation:
       blink-caret 1s cubic-bezier(1, 0, 0, 1) infinite,
-      fade-in 0.8s ease-out,
       gradientMove 6s linear infinite;
 
     @media (max-width: 640px) {
@@ -71,7 +79,6 @@
     background-color: var(--hero-normal-text-color);
     -webkit-background-clip: text;
     background-clip: text;
-    animation: fade-in 0.8s ease-out;
   }
 }
 
@@ -89,15 +96,6 @@
   50%,
   to {
     border-image: linear-gradient(to bottom, transparent, transparent) 1;
-  }
-}
-
-@keyframes fade-in {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
   }
 }
 
