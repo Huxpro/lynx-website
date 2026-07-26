@@ -184,3 +184,11 @@
   from = "/3.4/*"
   to = "https://release-3-4--lynx-doc.netlify.app/:splat"
   status = 200
+
+# Serve the latest release entry at the site root while keeping the browser
+# location at /.
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+  force = true
