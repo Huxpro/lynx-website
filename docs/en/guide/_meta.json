@@ -104,6 +104,17 @@
     "type": "divider"
   },
   {
+    "type": "section-header",
+    "label": "guide.framework-integration"
+  },
+  {
+    "type": "dir",
+    "name": "framework-integration",
+    "label": "guide.framework-integration.series",
+    "collapsible": true,
+    "collapsed": true
+  },
+  {
     "type": "file",
     "name": "spec",
     "label": "guide.living-spec"

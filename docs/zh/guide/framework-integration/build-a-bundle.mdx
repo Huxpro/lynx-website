@@ -1,0 +1,90 @@
+# 阶段 1 · 构建出 Bundle
+
+目标：让你的编译产物变成 Lynx Explorer（以及 Lynx for Web）能加载的 `.lynx.bundle`。
+这一步还没有任何"框架形状"—— 只是把字节装进正确的信封。
+
+## Bundle 是什么
+
+`.lynx.bundle` 是一个带命名分段的编码模板。你需要关心的分段：
+
+| 分段 | 内容 | 线程 |
+|---|---|---|
+| `lepusCode.root` | **主线程程序** —— 首帧绘制前求值 | 主线程 |
+| `manifest["/app-service.js"]` | **后台程序** —— 你的应用 + 框架 | 后台 |
+| `styleInfo` | 编译后的 CSS（见下文） | 引擎 |
+| `pageConfig` | 引擎配置（`defaultOverflowVisible`、CSS 行为开关…） | 引擎 |
+| `elementTemplates` | 引擎可实例化的元素模板（进阶，见阶段 3） | 引擎 |
+
+这个格式不需要手写，框架中立的工具链会替你生成：
+
+- **`@lynx-js/template-webpack-plugin`**（`LynxTemplatePlugin` + `LynxEncodePlugin`）
+  —— 把产出的 chunk 收进分段并编码 bundle。
+- **`@lynx-js/runtime-wrapper-webpack-plugin`** —— 给后台 chunk 包上引擎期望的运行时信封。
+- **`@lynx-js/css-extract-webpack-plugin`** —— 把 CSS 变成 `styleInfo`。
+- **`@lynx-js/rspeedy`** —— 基于 Rsbuild 的 CLI，统筹以上一切外加 dev server 与
+  HMR。各框架插件（`plugin-react`、Vue 的、Octane 的）都是它上面的薄层。
+
+> **案例 —— 最小可行配置。** miso-lynx 的完整接入是一份约 55 行的
+> `rspack.config.js`：一个入口（GHC 编译出的 JS）、`LynxEncodePlugin`、
+> `LynxTemplatePlugin`，加一个五行的内联插件把唯一的输出 chunk 标记为
+> `"lynx:main-thread": true`。让像素上屏真的只需要这些 —— 单个主线程 chunk，
+> 完全没有后台程序。从这里起步；之后升级成双 chunk 时不会浪费任何工作。
+
+## 双层构建（当你准备好时）
+
+完整的接入会把**同一个应用入口编译两次** —— 每条线程一次 —— 打进同一个 bundle。
+所有成熟接入都收敛到了同一个 bundler 技术：模块 **layers**
+（webpack/rspack `experiments.layers`），配合按 `issuerLayer` 路由的 loader 与
+按层的 define。
+
+- ReactLynx：`react:background` / `react:main-thread` 两层；按层 SWC 配置
+  （`__MAIN_THREAD__`/`__JS__` define、主线程切片摇掉 effect 类 hooks、指令 DCE
+  在主线程切片清空 `'background only'` 函数体、在后台切片清空 `'main thread'` 函数体）。
+- Vue Lynx：`vue:background` / `vue:main-thread`，同一思路，worklet loader 负责
+  按线程抽取。
+- Octane：`octane:background` / `octane:main-thread` 两层，外加一个
+  `NormalModuleReplacementPlugin`：当框架包被主线程层导入时整体替换为
+  `first-screen` 门面 —— 如果你的主线程切片是"同一 API 的另一个实现"而非同一份
+  代码，这一招很干净。
+
+实用建议：
+
+1. **先只发一个 chunk。** 双层构建服务于你还没选定的线程架构（阶段 3），第一天
+   别为它付费。
+2. **尽早预留 define 与指令。** `'background only'` / `'main thread'` 指令 DCE 和
+   `__MAIN_THREAD__` 风格的 define 现在加很便宜，之后会成为承重墙。
+3. **小心缓存。** webpack 持久缓存不知道你的插件变了；陈旧 bundle 的"幽灵 bug"
+   是接入期第一大坑。条件反射地清 `node_modules/.cache`。
+
+## CSS
+
+CSS 在构建期编译进 `styleInfo` —— 选择器、作用域（`cssId`）由引擎原生应用。对框架
+作者的影响：
+
+- 运行时改 class 是廉价的**属性写**（`__SetClasses`），不是 JS 里的样式重算。
+  优先产出 class 字符串而非内联样式对象。
+- 内联样式走 `__SetInlineStyles`（字符串或对象）。动态值可以用；别把整个样式系统
+  从这里过。
+- 作用域：如果你的框架有 scoped 样式（SFC 式），映射到 `cssId` + 元素创建时的
+  `__SetCSSId`。跳过这步的话一切都在全局作用域 —— demo 能忍，之后会疼。
+- `pageConfig` 会改变 CSS 语义（如 `defaultOverflowVisible`）。要有意识地设置它，
+  并读下一篇关于它**何时生效**的警告。
+
+## Polyfill 现实
+
+设备上的后台运行时是 PrimJS，不是 V8。预算一小层 polyfill：
+`TextEncoder`/`TextDecoder`、`BigInt`（JSBI）、`requestAnimationFrame`（别名到
+`lynx.requestAnimationFrame`），并检查你的编译器对运行时的假设 —— miso-lynx 的
+GHC 产物正好需要这三样。如果你的语言运行时很大（GHC 的 JS 后端：一个 counter 约
+1MB gzip），现在就记下来：它会成为首帧故事的主导项，而阶段 3 的线程选择正是管理
+它的手段。
+
+## 开发环
+
+- **Lynx Explorer**（真机/模拟器）加载一个被服务的 bundle URL —— 你的日常主力。
+  它的错误 toast 会跨页面存留；先重启再相信红屏。
+- **Lynx for Web**（`@lynx-js/web-core`）在 Chromium 里用真实双线程跑同一个
+  bundle —— 你的 CI harness。挂载 `<lynx-view url=…>`，用 Playwright 驱动。
+  本系列所有基准数字都来自这个 harness。
+
+**完成标志：** hello-world bundle 在 Explorer 和 `<lynx-view>` 里都渲染出来。
