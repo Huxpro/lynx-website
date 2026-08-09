@@ -786,5 +786,13 @@
   "sidebar.devtool-native-api": {
     "en": "Lynx DevTool Native APIs",
     "zh": "Lynx DevTool 客户端 APIs"
+  },
+  "guide.framework-integration": {
+    "en": "For Framework Authors",
+    "zh": "面向框架作者"
+  },
+  "guide.framework-integration.series": {
+    "en": "Framework Integration",
+    "zh": "框架接入指南"
   }
 }

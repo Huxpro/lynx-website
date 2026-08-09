@@ -1,0 +1,97 @@
+# 阶段 2 · 驱动 UI
+
+目标：让你的框架的声明式模型 —— 无论是 VDOM、signal、编译模板还是 Elm 循环 ——
+能创建、更新、移除真实的 Lynx 元素，并收到事件回调。这一步是把"我的框架怎么摸
+DOM"翻译成"我的框架怎么说 Element PAPI"。
+
+## 引擎会调用的契约
+
+你的主线程程序必须定义一小组全局回调。全部都要定义，哪怕是 no-op —— 引擎会调用
+它们：
+
+```js
+globalThis.renderPage = function (data) { /* 构建并绘制首帧 */ };
+globalThis.processData = function (data) { /* 渲染前的数据更新 */ };
+globalThis.updatePage = function (data, options) { /* 原生驱动的数据更新 */ };
+```
+
+`renderPage` 就是你的首帧：创建页面根（`__CreatePage("0", 0)`）、建树、然后
+`__FlushElementTree()`。两个所有接入都交过学费的时机事实：
+
+- **PageConfig 到得晚。** 引擎在你的主线程脚本求值**之后**
+  （`TemplateAssembler::DidVMExecute`）才把 `pageConfig` 解码到 ElementManager 上。
+  在模块顶层创建的元素看到的配置默认值 —— 尤其 `defaultOverflowVisible` —— 是
+  未设置状态，会被裁剪着绘制。把首次渲染推迟到 `renderPage` 回调里，别在模块顶层
+  画。（Octane 对此有显式处理，照抄即可。）
+- **不 flush 不上屏。** `__FlushElementTree()` 是提交点。攒一批，flush 一次。
+
+## 十分钟 Element PAPI
+
+这是暴露给主线程 JS 运行时的一套 DOM 形状的 C++ API。要点：
+
+**创建是分型的。** 用专用创建函数 —— 引擎按类型挂行为：`__CreateView`、
+`__CreateText`、`__CreateRawText(text)`、`__CreateImage`、`__CreateScrollView`、
+`__CreateList`，`__CreateElement(tag, …)` 只作兜底。文本内容住在 `raw-text` 子节点
+里（`__SetAttribute(rawText, 'text', value)`），不是 `<text>` 的属性。
+
+**树操作如你所料。** `__AppendElement`、`__InsertElementBefore`、`__RemoveElement`、
+`__ReplaceElements`、`__SwapElement`，外加 `__GetParent`、`__ElementIsEqual`、
+`__GetElementUniqueID`（稳定数字 id —— 你会需要它）。
+
+**属性按类路由 —— 不是一路 `setAttribute` 到底：**
+
+| 你的概念 | PAPI 调用 |
+|---|---|
+| CSS class | `__SetClasses(el, "row danger")` |
+| 内联样式 | `__SetInlineStyles(el, styles)` |
+| id | `__SetID(el, id)` |
+| dataset | `__SetDataset(el, bag)` |
+| scoped-CSS 作用域 | `__SetCSSId(els, cssId)` |
+| 其余 | `__SetAttribute(el, key, value)` |
+
+路由错了不报错 —— 只是静默无效或行为不对。（Octane 的 `applyProps` 是一份完整
+路由表的好参考。）
+
+**事件有三种注册语义。** `__AddEvent(el, kind, name, handler)`，kind 取
+`bindEvent`（冒泡，你想要的默认值）、`catchEvent`（**会终止传播** —— 这不是
+"带 capture 的 addEventListener"，把它当默认值会静默弄坏父级处理器；真的有接入
+把这个 bug 发上线过）、或 `capture-bind`/`capture-catch`。handler 的值是*字符串或
+对象 token*，不是闭包 —— 谁接住它、在哪条线程执行是阶段 3 的决定；纯主线程接入
+今天可以用 `{type:'worklet', value: fn}` 对象。
+
+**列表是平台送的礼物 —— 收下。** `__CreateList(parent, componentAtIndex,
+enqueueComponent, opts, componentAtIndexes)` 给你原生的按窗回收：引擎按需向你要
+cell、用完还回复用池。四个成熟接入全都接了；传了 `null, null` 的那家（miso，
+暂时）得到的是全量物化的列表和零滚动性能红利。如果只深度接入一个平台专属 API，
+就选这个。
+
+## 桥接你的框架：三种形态，都有人发布过
+
+**(a) 直连适配器 —— 一天的活。** 如果你的框架本来就有渲染器接缝（Vue 的
+`createRenderer`、miso 的 `DrawingContext`、React reconciler 式的 host config），
+直接把它实现到 PAPI 上。miso-lynx 的整个桥只有 105 行：
+
+```ts
+createElement: (tag) => { switch (tag) { case 'view': return __CreateView(pageId); … } },
+appendChild:   (p, c) => __AppendElement(p, c),
+setAttribute:  (n, k, v) => k === 'id' ? __SetID(n, v) : __SetAttribute(n, k, v),
+flush:         () => __FlushElementTree(),
+```
+
+这会让整个框架跑在主线程上。这是最快的移植路径，也是一种正当的架构（阶段 3 讨论
+何时正当）—— 但要清楚：你是在推迟线程决定，不是逃掉了它。
+
+**(b) 保留镜像 + op 流。** 框架在后台线程上对着一棵轻量镜像树跑（Vue Lynx 的
+`ShadowElement`）；变更序列化成扁平 op 缓冲，由主线程的小解释器重放成 PAPI 调用。
+框架的渲染器接缝不变 —— 只是它的"DOM"变成了镜像。
+
+**(c) 编译结构。** 你的编译器把每个模板拆成静态壳 + 洞表。ReactLynx 把壳烤成
+直线 PAPI 的 `create()` 函数；Octane 产出带槽位表的 JSON plan。无论哪种，运行时
+只搬**洞值**，wire（阶段 3）会便宜得多。
+
+从 (a) 或 (b) 开始。形态 (c) 是阶段 3 的优化，它假设你已经知道自己的 wire 上跑
+的是什么。
+
+**完成标志：** krausest 风格的表格 app —— 建行/改行/选中、事件响应 —— 在你的框架
+里于 Lynx for Web 上跑通。app 契约直接抄 `huxpro/vue-lynx`
+`packages/benchmark/apps/`，让你的数字从第一天起就能和本系列的每个框架对比。
