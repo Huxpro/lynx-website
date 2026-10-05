@@ -1,3 +1,4 @@
+# Publishes docs/public/campaign. The Pages site root is the story.
 name: Pages
 
 on:
