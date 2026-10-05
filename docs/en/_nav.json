@@ -18,5 +18,10 @@
     "text": "Blog",
     "link": "/blog/index",
     "activeMatch": "/blog/"
+  },
+  {
+    "text": "Story",
+    "link": "/campaign/",
+    "activeMatch": "/campaign"
   }
 ]

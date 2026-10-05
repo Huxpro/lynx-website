@@ -4,6 +4,7 @@ import {
   useLang,
   useLocation,
   usePageData,
+  withBase,
 } from '@rspress/core/runtime';
 import {
   HomeLayout as BaseHomeLayout,
@@ -354,6 +355,19 @@ type BaseLinkRestProps = Omit<
   'href' | 'children' | 'className' | 'style'
 >;
 
+function campaignPageHref(href: string) {
+  const suffixAt = href.search(/[?#]/);
+  const path = suffixAt === -1 ? href : href.slice(0, suffixAt);
+  const suffix = suffixAt === -1 ? '' : href.slice(suffixAt);
+  const bare = removeBase(path)
+    .replace(/\/index\.html$/, '')
+    .replace(/\.html$/, '')
+    .replace(/\/$/, '');
+  if (bare !== '/campaign') return null;
+  const target = withBase('/campaign').replace(/\/+$/, '');
+  return `${target}/${suffix}`;
+}
+
 const Link = forwardRef<HTMLAnchorElement, BaseLinkProps>((props, ref) => {
   const { href, children, className, style, ...restProps } = props;
   const safeRestProps = restProps as BaseLinkRestProps;
@@ -368,6 +382,23 @@ const Link = forwardRef<HTMLAnchorElement, BaseLinkProps>((props, ref) => {
     safeRestProps.lang === lang
   ) {
     normalizedHref = removeBase(`${pathname}${search}`);
+  }
+
+  // The story is a standalone HTML5 page in docs/public. A full navigation
+  // loads that file; client-side routing has no matching doc route.
+  const storyHref = normalizedHref ? campaignPageHref(normalizedHref) : null;
+  if (storyHref) {
+    return (
+      <a
+        href={storyHref}
+        className={className}
+        ref={ref}
+        style={style as any}
+        {...safeRestProps}
+      >
+        {children}
+      </a>
+    );
   }
 
   if (normalizedHref?.startsWith(`${getLangPrefix(lang)}/blog`)) {

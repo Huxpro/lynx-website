@@ -1,0 +1,1518 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Lynx — Unlock Native for More</title>
+    <meta
+      name="description"
+      content="An interactive story of Lynx: one interface, native rendering on iOS, Android, HarmonyOS, and the Web."
+    />
+    <meta name="theme-color" content="#07080c" />
+    <meta name="color-scheme" content="dark" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2307080c'/%3E%3Cpath d='M7 16 L11 5 L15 16' fill='none' stroke='%23ff351a' stroke-width='2.4' stroke-linejoin='round'/%3E%3Cpath d='M17 16 L21 5 L25 16' fill='none' stroke='%2300ebeb' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E"
+    />
+    <link rel="canonical" href="https://lynxjs.org/next/campaign/" />
+    <meta property="og:title" content="Lynx — Unlock Native for More" />
+    <meta
+      property="og:description"
+      content="Write the interface once. Lynx renders it natively, with the CSS and JavaScript you already know."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lynxjs.org/next/campaign/" />
+    <script>
+      (function () {
+        var lang = 'en';
+        try {
+          var q = new URLSearchParams(location.search).get('lang');
+          var saved = localStorage.getItem('lynx-h5-lang');
+          var ref = document.referrer || '';
+          var sameSite = location.host && ref.indexOf(location.host) !== -1;
+          if (q === 'zh' || q === 'en') lang = q;
+          else if (saved === 'zh' || saved === 'en') lang = saved;
+          else if (sameSite) lang = /\/zh(\/|$|\?)/.test(ref) ? 'zh' : 'en';
+          else if ((navigator.language || '').toLowerCase().indexOf('zh') === 0)
+            lang = 'zh';
+        } catch (e) {}
+        document.documentElement.lang = lang;
+      })();
+    </script>
+    <style>
+      :root {
+        --bg: #07080c;
+        --fg: #f6f1e8;
+        --muted: #a39c93;
+        --line: rgba(246, 241, 232, 0.14);
+        --hot: #ff351a;
+        --tide: #00ebeb;
+        --tone: #ff351a;
+        --tone-ink: #1a0906;
+        --sans: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans CJK SC',
+          'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+        --mono: ui-monospace, 'SFMono-Regular', 'Source Code Pro', Menlo, Consolas,
+          monospace;
+        --pad: clamp(16px, 3vw, 36px);
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--sans);
+        overflow: hidden;
+      }
+
+      body {
+        min-height: 100dvh;
+        overscroll-behavior: none;
+        touch-action: none;
+      }
+
+      button,
+      a,
+      input {
+        touch-action: manipulation;
+      }
+
+      input[type='range'] {
+        touch-action: pan-x;
+      }
+
+      html[lang='zh'] .en,
+      html[lang='en'] .zh {
+        display: none !important;
+      }
+
+      .glow,
+      .grain {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .glow {
+        background:
+          radial-gradient(
+            420px 320px at var(--gx, 70%) var(--gy, 20%),
+            rgba(255, 53, 26, 0.28),
+            transparent 70%
+          ),
+          radial-gradient(
+            380px 280px at var(--gx2, 20%) var(--gy2, 80%),
+            rgba(0, 235, 235, 0.16),
+            transparent 70%
+          );
+        z-index: 0;
+      }
+
+      .grain {
+        opacity: 0.18;
+        z-index: 1;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.55'/></svg>");
+      }
+
+      .top,
+      .pager,
+      .stage {
+        position: relative;
+        z-index: 2;
+      }
+
+      .top {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: calc(12px + env(safe-area-inset-top)) var(--pad) 10px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: inherit;
+        text-decoration: none;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+      }
+
+      .brand svg {
+        display: block;
+      }
+
+      .meter {
+        display: flex;
+        gap: 6px;
+        margin: 0 auto;
+      }
+
+      .meter button,
+      .lang button,
+      .pager button,
+      .swatch,
+      .seg button,
+      .text-btn,
+      .like {
+        font: inherit;
+        color: inherit;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+      }
+
+      .meter button {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        position: relative;
+      }
+
+      .meter button::before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        right: 4px;
+        top: 13px;
+        height: 2px;
+        border-radius: 99px;
+        background: rgba(246, 241, 232, 0.28);
+      }
+
+      .meter button[aria-current='step']::before,
+      .meter button.is-done::before {
+        background: var(--hot);
+      }
+
+      .meter button:focus-visible,
+      .lang button:focus-visible,
+      .pager button:focus-visible,
+      .swatch:focus-visible,
+      .seg button:focus-visible,
+      .text-btn:focus-visible,
+      .like:focus-visible,
+      .title-field input:focus-visible {
+        outline: 2px solid var(--tide);
+        outline-offset: 3px;
+      }
+
+      .lang {
+        display: flex;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(7, 8, 12, 0.55);
+      }
+
+      .lang button {
+        border-radius: 999px;
+        padding: 6px 10px;
+        color: var(--muted);
+      }
+
+      .lang button[aria-pressed='true'] {
+        background: var(--fg);
+        color: #14120f;
+      }
+
+      .stage {
+        height: 100dvh;
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+      }
+
+      .scene {
+        position: relative;
+        flex: 0 0 100%;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .scene-inner {
+        height: 100%;
+        overflow: auto;
+        padding: calc(72px + env(safe-area-inset-top)) var(--pad)
+          calc(88px + env(safe-area-inset-bottom));
+        display: grid;
+        align-content: center;
+      }
+
+      .split {
+        width: min(1120px, 100%);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 0.92fr) minmax(280px, 1.08fr);
+        gap: clamp(20px, 4vw, 56px);
+        align-items: center;
+      }
+
+      .cover-inner {
+        width: min(920px, 100%);
+        margin: 0 auto;
+      }
+
+      .kicker {
+        margin: 0 0 12px;
+        color: var(--tide);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        font-weight: 600;
+        letter-spacing: -0.048em;
+        line-height: 0.96;
+      }
+
+      h1 {
+        font-size: clamp(52px, 9vw, 104px);
+      }
+
+      h2 {
+        font-size: clamp(36px, 5vw, 68px);
+      }
+
+      .hot {
+        background: linear-gradient(100deg, var(--hot), #ffb15a 42%, var(--tide));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .lede {
+        max-width: 38rem;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: clamp(16px, 2vw, 19px);
+        line-height: 1.5;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 28px;
+        align-items: center;
+      }
+
+      .text-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 18px;
+        border-radius: 999px;
+        text-decoration: none;
+        border: 1px solid var(--line);
+      }
+
+      .text-btn.primary {
+        background: var(--hot);
+        border-color: var(--hot);
+        color: #1a0906;
+        font-weight: 700;
+      }
+
+      .hint,
+      .fine {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .hint {
+        margin: 14px 0 0;
+      }
+
+      .phones {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .phone {
+        border: 1px solid rgba(246, 241, 232, 0.16);
+        border-radius: 22px;
+        padding: 8px 8px 10px;
+        background: linear-gradient(180deg, #1c1e26, #101218);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      }
+
+      .screen {
+        height: clamp(112px, 22dvh, 190px);
+        border-radius: 15px;
+        padding: 10px;
+        background-color: #0c0e13;
+        background-image: radial-gradient(
+          80px 64px at 110% 120%,
+          var(--tone),
+          transparent 68%
+        );
+        background-repeat: no-repeat;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow: hidden;
+      }
+
+      .mirror-title {
+        margin: 0;
+        font-size: clamp(16px, 2vw, 22px);
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        word-break: break-word;
+      }
+
+      .pill {
+        align-self: flex-start;
+        max-width: 100%;
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: var(--tone);
+        color: var(--tone-ink);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .os {
+        display: block;
+        margin-top: 8px;
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-top: 14px;
+      }
+
+      .swatches {
+        display: flex;
+        gap: 8px;
+      }
+
+      .swatch {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+      }
+
+      .swatch[aria-pressed='true'] {
+        border-color: white;
+      }
+
+      .swatch[data-tone='coral'] {
+        background: #ff351a;
+      }
+      .swatch[data-tone='tide'] {
+        background: #00ebeb;
+      }
+      .swatch[data-tone='ink'] {
+        background: #7aa2ff;
+      }
+      .swatch[data-tone='lime'] {
+        background: #d6ff4a;
+      }
+
+      .title-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(7, 8, 12, 0.45);
+      }
+
+      .title-field span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .title-field input {
+        width: 9rem;
+        border: 0;
+        background: transparent;
+        color: var(--fg);
+        font: inherit;
+        font-size: 15px;
+      }
+
+      .title-field input:focus {
+        outline: none;
+      }
+
+      .like-wrap {
+        display: grid;
+        gap: 16px;
+      }
+
+      .like {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: min(100%, 420px);
+        padding: 16px 18px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(12, 14, 19, 0.8);
+      }
+
+      .like > span:first-child {
+        display: grid;
+        gap: 2px;
+      }
+
+      .like strong {
+        font-size: 40px;
+        letter-spacing: -0.05em;
+        line-height: 1;
+      }
+
+      .heart {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 53, 26, 0.12);
+        color: var(--hot);
+      }
+
+      .heart.pop {
+        animation: pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      @keyframes pop {
+        50% {
+          transform: scale(1.18);
+        }
+      }
+
+      .lanes {
+        display: grid;
+        gap: 10px;
+        width: min(100%, 420px);
+      }
+
+      .lane {
+        display: grid;
+        grid-template-columns: 108px 1fr;
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+      }
+
+      .track {
+        position: relative;
+        height: 16px;
+        border-radius: 99px;
+        background: rgba(246, 241, 232, 0.08);
+        overflow: hidden;
+      }
+
+      .pip {
+        position: absolute;
+        top: 3px;
+        left: 4px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .lane.main .pip {
+        background: var(--hot);
+      }
+
+      .lane.bg .pip {
+        background: var(--tide);
+      }
+
+      .lane.is-run .pip {
+        left: calc(100% - 14px);
+        transition: left 0.42s linear;
+      }
+
+      .lane.bg.is-run .pip {
+        transition-duration: 0.55s;
+      }
+
+      .log {
+        min-height: 2.6em;
+        margin: 0;
+        color: var(--fg);
+        font-size: 14px;
+      }
+
+      .lab {
+        display: grid;
+        gap: 14px;
+      }
+
+      .specimen {
+        height: clamp(140px, 28dvh, 230px);
+        border-radius: var(--radius, 22px);
+        background: linear-gradient(
+          var(--angle, 120deg),
+          #ff351a,
+          #00ebeb
+        );
+        box-shadow: 0 18px var(--glow, 16px) rgba(255, 53, 26, 0.35);
+        display: grid;
+        place-items: center;
+        color: #1a0906;
+        text-align: center;
+        padding: 16px;
+      }
+
+      .specimen strong {
+        font-size: clamp(28px, 4vw, 42px);
+        letter-spacing: -0.05em;
+      }
+
+      .sliders {
+        display: grid;
+        gap: 8px;
+      }
+
+      .sliders label {
+        display: grid;
+        grid-template-columns: 92px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .sliders output {
+        min-width: 3.2rem;
+        text-align: right;
+        color: var(--fg);
+      }
+
+      input[type='range'] {
+        width: 100%;
+        accent-color: var(--hot);
+      }
+
+      pre {
+        margin: 0;
+        padding: 14px 16px;
+        overflow: auto;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(8, 9, 13, 0.72);
+        color: #efe8dc;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+      }
+
+      .seg {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .seg button {
+        min-height: 38px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+
+      .seg button[aria-checked='true'] {
+        background: var(--fg);
+        color: #14120f;
+        border-color: var(--fg);
+      }
+
+      .ship {
+        width: min(760px, 100%);
+        margin: 0 auto;
+        text-align: left;
+      }
+
+      .command {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: min(100%, 460px);
+        margin-top: 22px;
+        padding: 8px 8px 8px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(8, 9, 13, 0.72);
+        font-family: var(--mono);
+        font-size: 14px;
+      }
+
+      .link-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      .pager {
+        position: fixed;
+        z-index: 4;
+        left: var(--pad);
+        right: var(--pad);
+        bottom: calc(14px + env(safe-area-inset-bottom));
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+      }
+
+      .pager button {
+        pointer-events: auto;
+        min-height: 42px;
+        padding: 0 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(7, 8, 12, 0.72);
+      }
+
+      .pager button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
+      .sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      @media (max-width: 860px) {
+        .split {
+          grid-template-columns: 1fr;
+          gap: 18px;
+        }
+
+        .phones {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .screen {
+          height: 132px;
+        }
+
+        .scene-inner {
+          padding-bottom: calc(108px + env(safe-area-inset-bottom));
+        }
+
+        h1 {
+          font-size: clamp(44px, 13vw, 68px);
+        }
+
+        .scene-inner {
+          align-content: start;
+          padding-top: calc(78px + env(safe-area-inset-top));
+        }
+      }
+
+      @media (max-width: 420px) {
+        .sliders label {
+          grid-template-columns: 76px 1fr auto;
+        }
+
+        .lane {
+          grid-template-columns: 86px 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .stage,
+        .pip,
+        .heart.pop {
+          transition: none;
+          animation: none;
+        }
+
+        .glow {
+          background:
+            radial-gradient(420px 280px at 80% 10%, rgba(255, 53, 26, 0.22), transparent 70%),
+            radial-gradient(380px 240px at 10% 90%, rgba(0, 235, 235, 0.12), transparent 70%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow" id="aurora" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="top">
+      <a class="brand" href="https://lynxjs.org/">
+        <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+          <path
+            d="M7 16 L11 5 L15 16"
+            fill="none"
+            stroke="#ff351a"
+            stroke-width="2.4"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M17 16 L21 5 L25 16"
+            fill="none"
+            stroke="#00ebeb"
+            stroke-width="2.4"
+            stroke-linejoin="round"
+          />
+          <circle cx="12" cy="20" r="1.5" fill="#f6f1e8" />
+          <circle cx="20" cy="20" r="1.5" fill="#f6f1e8" />
+        </svg>
+        Lynx
+      </a>
+      <nav class="meter" id="meter" aria-label="Story progress"></nav>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-set-lang="zh" aria-pressed="false">中文</button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage">
+      <section class="scene is-on" id="scene-cover" data-screen="cover" aria-labelledby="cover-title">
+        <div class="scene-inner">
+          <div class="cover-inner">
+            <p class="kicker">
+              <span class="en">Lynx · open source</span>
+              <span class="zh">Lynx · 开源</span>
+            </p>
+            <h1 id="cover-title">
+              <span class="en">Unlock<br />Native <span class="hot">for more</span></span>
+              <span class="zh">为更多人<br />解锁<span class="hot">原生</span></span>
+            </h1>
+            <p class="lede">
+              <span class="en">
+                Write the interface once. Lynx renders it natively on iOS, Android,
+                HarmonyOS, and the Web — with the CSS and JavaScript you already know.
+              </span>
+              <span class="zh">
+                界面写一次。Lynx 在 iOS、Android、鸿蒙和 Web 上原生渲染，用的是你已经会的 CSS 和 JavaScript。
+              </span>
+            </p>
+            <div class="actions">
+              <button class="text-btn primary" type="button" id="start">
+                <span class="en">Start the story</span>
+                <span class="zh">开始这段故事</span>
+              </button>
+              <a class="text-btn" href="https://lynxjs.org/guide/start/quick-start">
+                <span class="en">Quick start</span>
+                <span class="zh">快速开始</span>
+              </a>
+            </div>
+            <p class="hint">
+              <span class="en">Swipe, scroll, or press the down arrow.</span>
+              <span class="zh">滑动、滚动，或按向下键。</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="scene-platforms" data-screen="platforms" aria-labelledby="platforms-title" inert>
+        <div class="scene-inner">
+          <div class="split">
+            <div>
+              <p class="kicker">
+                <span class="en">01 — Write once</span>
+                <span class="zh">01 — 一次编写</span>
+              </p>
+              <h2 id="platforms-title">
+                <span class="en">One tree.<br />Four screens.</span>
+                <span class="zh">同一棵树。<br />四块屏幕。</span>
+              </h2>
+              <p class="lede">
+                <span class="en">
+                  Change the title or the color. Every screen follows. Lynx maps one
+                  element tree onto native views — or a custom renderer when you want
+                  the pixels to match on desktop too.
+                </span>
+                <span class="zh">
+                  改标题或颜色，四端一起变。Lynx 把同一棵元素树映射成各端原生视图；若要桌面端像素一致，也可以走自绘渲染器。
+                </span>
+              </p>
+            </div>
+            <div>
+              <div class="phones" id="phones" data-tone="coral">
+                <article class="phone">
+                  <div class="screen">
+                    <p class="mirror-title">Tonight</p>
+                    <span class="pill"><span class="en">Featured</span><span class="zh">精选</span></span>
+                  </div>
+                  <span class="os">iOS</span>
+                </article>
+                <article class="phone">
+                  <div class="screen">
+                    <p class="mirror-title">Tonight</p>
+                    <span class="pill"><span class="en">Featured</span><span class="zh">精选</span></span>
+                  </div>
+                  <span class="os">Android</span>
+                </article>
+                <article class="phone">
+                  <div class="screen">
+                    <p class="mirror-title">Tonight</p>
+                    <span class="pill"><span class="en">Featured</span><span class="zh">精选</span></span>
+                  </div>
+                  <span class="os">HarmonyOS</span>
+                </article>
+                <article class="phone">
+                  <div class="screen">
+                    <p class="mirror-title">Tonight</p>
+                    <span class="pill"><span class="en">Featured</span><span class="zh">精选</span></span>
+                  </div>
+                  <span class="os">Web</span>
+                </article>
+              </div>
+              <div class="controls" data-noswipe>
+                <div class="swatches" role="group" aria-label="Accent">
+                  <button class="swatch" type="button" data-tone="coral" aria-pressed="true"></button>
+                  <button class="swatch" type="button" data-tone="tide" aria-pressed="false"></button>
+                  <button class="swatch" type="button" data-tone="ink" aria-pressed="false"></button>
+                  <button class="swatch" type="button" data-tone="lime" aria-pressed="false"></button>
+                </div>
+                <label class="title-field">
+                  <span class="en">Title</span>
+                  <span class="zh">标题</span>
+                  <input id="titleInput" maxlength="18" value="Tonight" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="scene-threads" data-screen="threads" aria-labelledby="threads-title" inert>
+        <div class="scene-inner">
+          <div class="split">
+            <div>
+              <p class="kicker">
+                <span class="en">02 — Two threads</span>
+                <span class="zh">02 — 双线程</span>
+              </p>
+              <h2 id="threads-title">
+                <span class="en">The tap<br />doesn't wait.</span>
+                <span class="zh">这一下，<br />不用等。</span>
+              </h2>
+              <p class="lede">
+                <span class="en">
+                  The main thread handles the gesture immediately. The background
+                  thread commits state afterward, so the first frame does not have to
+                  start from a blank screen.
+                </span>
+                <span class="zh">
+                  主线程立刻接住手势，后台线程随后提交状态。首帧不必从白屏开始。
+                </span>
+              </p>
+              <p class="fine">
+                <span class="en">The delay below is an illustration, not a benchmark.</span>
+                <span class="zh">下面的延迟是示意，不是跑分。</span>
+              </p>
+            </div>
+            <div class="like-wrap" data-noswipe>
+              <button class="like" type="button" id="like" aria-describedby="likeLog">
+                <span>
+                  <span class="en">Likes</span>
+                  <span class="zh">喜欢</span>
+                  <strong id="likeCount">0</strong>
+                </span>
+                <span class="heart" id="heart" aria-hidden="true">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                      d="M12 20s-7-4.4-7-9.1C5 8 6.8 6.2 9 6.2c1.3 0 2.4.6 3 1.6.6-1 1.7-1.6 3-1.6 2.2 0 4 1.8 4 4.7C19 15.6 12 20 12 20z"
+                    />
+                  </svg>
+                </span>
+              </button>
+              <div class="lanes" aria-hidden="true">
+                <div class="lane main" id="laneMain">
+                  <span class="en">MAIN</span><span class="zh">主线程</span>
+                  <div class="track"><i class="pip"></i></div>
+                </div>
+                <div class="lane bg" id="laneBg">
+                  <span class="en">BACKGROUND</span><span class="zh">后台</span>
+                  <div class="track"><i class="pip"></i></div>
+                </div>
+              </div>
+              <p class="log" id="likeLog">
+                <span class="en">Tap the heart. The gesture paints first.</span>
+                <span class="zh">点爱心。手势先画出来。</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="scene-css" data-screen="css" aria-labelledby="css-title" inert>
+        <div class="scene-inner">
+          <div class="split">
+            <div>
+              <p class="kicker">
+                <span class="en">03 — Web skills</span>
+                <span class="zh">03 — Web 技能</span>
+              </p>
+              <h2 id="css-title">
+                <span class="en">CSS,<br />still CSS.</span>
+                <span class="zh">CSS，<br />还是 CSS。</span>
+              </h2>
+              <p class="lede">
+                <span class="en">
+                  Lynx styles with the CSS you already write: gradients, border-radius,
+                  and box-shadow. Drag the controls. The snippet is the card.
+                </span>
+                <span class="zh">
+                  Lynx 用你已经在写的 CSS 做样式：渐变、border-radius、box-shadow。拖动滑杆，下面这段就是这张卡片。
+                </span>
+              </p>
+              <div class="sliders" data-noswipe>
+                <label>
+                  <span class="en">radius</span><span class="zh">圆角</span>
+                  <input id="radius" type="range" min="0" max="48" value="22" />
+                  <output id="radiusOut">22px</output>
+                </label>
+                <label>
+                  <span class="en">angle</span><span class="zh">角度</span>
+                  <input id="angle" type="range" min="0" max="360" value="120" />
+                  <output id="angleOut">120°</output>
+                </label>
+                <label>
+                  <span class="en">shadow</span><span class="zh">阴影</span>
+                  <input id="glow" type="range" min="0" max="40" value="16" />
+                  <output id="glowOut">16px</output>
+                </label>
+              </div>
+            </div>
+            <div class="lab">
+              <div class="specimen" id="specimen">
+                <strong class="mirror-title">Tonight</strong>
+              </div>
+              <pre id="cssOut"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="scene-frameworks" data-screen="frameworks" aria-labelledby="fw-title" inert>
+        <div class="scene-inner">
+          <div class="split">
+            <div>
+              <p class="kicker">
+                <span class="en">04 — Frameworks</span>
+                <span class="zh">04 — 框架</span>
+              </p>
+              <h2 id="fw-title">
+                <span class="en">Bring your<br />framework.</span>
+                <span class="zh">带上你的<br />框架。</span>
+              </h2>
+              <p class="lede">
+                <span class="en">
+                  ReactLynx is the official React. Vue, Octane, and Miso for Haskell
+                  plug into the same element APIs. Switch frameworks — the screen stays.
+                </span>
+                <span class="zh">
+                  ReactLynx 是官方的 React。Vue、Octane，以及 Haskell 的 Miso，接入的是同一套元素接口。换框架，屏幕不动。
+                </span>
+              </p>
+              <div class="seg" id="frameworks" role="radiogroup" data-noswipe>
+                <button type="button" role="radio" data-fw="react" aria-checked="true">ReactLynx</button>
+                <button type="button" role="radio" data-fw="vue" aria-checked="false">Vue</button>
+                <button type="button" role="radio" data-fw="octane" aria-checked="false">Octane</button>
+                <button type="button" role="radio" data-fw="miso" aria-checked="false">Miso</button>
+              </div>
+            </div>
+            <div>
+              <article class="phone" style="max-width: 280px; margin: 0 auto 14px">
+                <div class="screen" id="fwScreen">
+                  <p class="mirror-title">Tonight</p>
+                  <span class="pill" id="fwPill">ReactLynx</span>
+                </div>
+                <span class="os" id="fwOs">
+                  <span class="en">same element tree</span>
+                  <span class="zh">同一棵元素树</span>
+                </span>
+              </article>
+              <pre id="fwCode"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="scene-ship" data-screen="ship" aria-labelledby="ship-title" inert>
+        <div class="scene-inner">
+          <div class="ship">
+            <p class="kicker">
+              <span class="en">05 — Ship</span>
+              <span class="zh">05 — 出发</span>
+            </p>
+            <h2 id="ship-title">
+              <span class="en">Create a<br /><span class="hot">Lynx app</span>.</span>
+              <span class="zh">搭一个<br /><span class="hot">Lynx 应用</span>。</span>
+            </h2>
+            <p class="lede">
+              <span class="en">
+                Rspeedy scaffolds the project. The engine behind this page's story
+                already renders interfaces in TikTok — Search, Shop, LIVE, and more.
+              </span>
+              <span class="zh">
+                Rspeedy 会帮你把项目搭起来。这套引擎已经在 TikTok 里渲染 Search、Shop、LIVE 等界面。
+              </span>
+            </p>
+            <div class="command" data-noswipe>
+              <code>npm create rspeedy@latest</code>
+              <button class="text-btn primary" type="button" id="copyBtn">
+                <span class="en">Copy</span>
+                <span class="zh">复制</span>
+              </button>
+            </div>
+            <div class="link-row">
+              <a class="text-btn primary" href="https://lynxjs.org/guide/start/quick-start">
+                <span class="en">Quick start</span>
+                <span class="zh">快速开始</span>
+              </a>
+              <a class="text-btn" href="https://lynxjs.org/blog/lynx-unlock-native-for-more">
+                <span class="en">Why Lynx</span>
+                <span class="zh">为什么是 Lynx</span>
+              </a>
+              <a class="text-btn" href="https://github.com/lynx-family/lynx" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a class="text-btn" href="https://discord.gg/mXk7jqdDXk" target="_blank" rel="noopener noreferrer">Discord</a>
+            </div>
+            <p class="fine">Apache-2.0 · lynxjs.org</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="pager">
+      <button type="button" id="prev">
+        <span class="en">Back</span>
+        <span class="zh">返回</span>
+      </button>
+      <button type="button" id="next">
+        <span class="en">Continue</span>
+        <span class="zh">继续</span>
+      </button>
+    </div>
+    <p class="sr" id="live" aria-live="polite"></p>
+
+    <script>
+      (function () {
+        var ORDER = ['cover', 'platforms', 'threads', 'css', 'frameworks', 'ship'];
+        var TONES = {
+          coral: ['#ff351a', '#1a0906'],
+          tide: ['#00ebeb', '#042222'],
+          ink: ['#7aa2ff', '#0c1224'],
+          lime: ['#d6ff4a', '#1a2204'],
+        };
+        var FW = {
+          react: {
+            pill: 'ReactLynx',
+            code: "import { useState } from '@lynx-js/react'\n\nfunction Card({ title }) {\n  const [liked, setLiked] = useState(false)\n  return (\n    <view className=\"card\" bindtap={() => setLiked(true)}>\n      <text>{title}</text>\n    </view>\n  )\n}",
+          },
+          vue: {
+            pill: 'Vue',
+            code: 'view.card\n  text  {title}\n\n// Vue connects through the same Lynx element APIs.',
+          },
+          octane: {
+            pill: 'Octane',
+            code: 'view.card\n  text  {title}\n\n// Octane connects through the same Lynx element APIs.',
+          },
+          miso: {
+            pill: 'Miso',
+            code: 'view.card\n  text  {title}\n\n// Miso (Haskell) connects through the same Lynx element APIs.',
+          },
+        };
+        var index = 0;
+        var lock = false;
+        var titleDirty = false;
+        var queuedLikes = 0;
+        var shownLikes = 0;
+        var fw = 'react';
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var titles = { en: 'Tonight', zh: '今夜' };
+
+        var scenes = ORDER.map(function (id) {
+          return document.getElementById('scene-' + id);
+        });
+        var meter = document.getElementById('meter');
+        var titleInput = document.getElementById('titleInput');
+        var phones = document.getElementById('phones');
+        var likeBtn = document.getElementById('like');
+        var likeCount = document.getElementById('likeCount');
+        var likeLog = document.getElementById('likeLog');
+        var heart = document.getElementById('heart');
+        var laneMain = document.getElementById('laneMain');
+        var laneBg = document.getElementById('laneBg');
+        var specimen = document.getElementById('specimen');
+        var cssOut = document.getElementById('cssOut');
+        var fwCode = document.getElementById('fwCode');
+        var fwPill = document.getElementById('fwPill');
+        var live = document.getElementById('live');
+        var prev = document.getElementById('prev');
+        var next = document.getElementById('next');
+        var copyBtn = document.getElementById('copyBtn');
+
+        ORDER.forEach(function (id, i) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.dataset.jump = String(i);
+          btn.setAttribute('aria-label', (i + 1) + ' / ' + ORDER.length);
+          meter.appendChild(btn);
+        });
+
+        function lang() {
+          return document.documentElement.lang === 'zh' ? 'zh' : 'en';
+        }
+
+        function setLang(nextLang) {
+          document.documentElement.lang = nextLang;
+          try {
+            localStorage.setItem('lynx-h5-lang', nextLang);
+          } catch (e) {}
+          document.querySelectorAll('[data-set-lang]').forEach(function (btn) {
+            btn.setAttribute('aria-pressed', btn.getAttribute('data-set-lang') === nextLang ? 'true' : 'false');
+          });
+          document.title = nextLang === 'zh' ? 'Lynx — 为更多人解锁原生' : 'Lynx — Unlock Native for More';
+          var toneNames = nextLang === 'zh'
+            ? { coral: '珊瑚', tide: '潮汐', ink: '墨蓝', lime: '青柠' }
+            : { coral: 'Coral', tide: 'Tide', ink: 'Ink', lime: 'Lime' };
+          document.querySelectorAll('.swatch').forEach(function (btn) {
+            btn.setAttribute('aria-label', toneNames[btn.dataset.tone] || btn.dataset.tone);
+          });
+          if (!titleDirty) {
+            titleInput.value = titles[nextLang];
+            paintTitle();
+          }
+          paintCss();
+          paintFramework();
+          paintLikeLog();
+        }
+
+        function paintTitle() {
+          var value = titleInput.value.trim() || titles[lang()];
+          document.querySelectorAll('.mirror-title').forEach(function (node) {
+            node.textContent = value;
+          });
+        }
+
+        function setTone(name) {
+          var pair = TONES[name] || TONES.coral;
+          phones.dataset.tone = name;
+          document.documentElement.style.setProperty('--tone', pair[0]);
+          document.documentElement.style.setProperty('--tone-ink', pair[1]);
+          document.querySelectorAll('.swatch').forEach(function (btn) {
+            btn.setAttribute('aria-pressed', btn.dataset.tone === name ? 'true' : 'false');
+          });
+        }
+
+        function paintCss() {
+          var radius = document.getElementById('radius').value;
+          var angle = document.getElementById('angle').value;
+          var glow = document.getElementById('glow').value;
+          document.getElementById('radiusOut').textContent = radius + 'px';
+          document.getElementById('angleOut').textContent = angle + '°';
+          document.getElementById('glowOut').textContent = glow + 'px';
+          specimen.style.setProperty('--radius', radius + 'px');
+          specimen.style.setProperty('--angle', angle + 'deg');
+          specimen.style.setProperty('--glow', glow + 'px');
+          cssOut.textContent =
+            '.card {\n' +
+            '  border-radius: ' + radius + 'px;\n' +
+            '  background: linear-gradient(' + angle + 'deg, #ff351a, #00ebeb);\n' +
+            '  box-shadow: 0 18px ' + glow + 'px rgba(255, 53, 26, 0.35);\n' +
+            '}';
+        }
+
+        function paintFramework() {
+          var item = FW[fw];
+          fwPill.textContent = item.pill;
+          var note = fw === 'react' ? '' : lang() === 'zh'
+            ? '\n\n// 示意元素树，不是该框架的源码语法。'
+            : '\n\n// Element tree sketch, not that framework’s source syntax.';
+          fwCode.textContent = fw === 'react' ? item.code : item.code.split('\n\n')[0] + note;
+          document.querySelectorAll('#frameworks [data-fw]').forEach(function (btn) {
+            btn.setAttribute('aria-checked', btn.dataset.fw === fw ? 'true' : 'false');
+          });
+        }
+
+        function paintLikeLog() {
+          if (shownLikes === 0) {
+            likeLog.innerHTML = lang() === 'zh'
+              ? '<span class="zh">点爱心。手势先画出来。</span>'
+              : '<span class="en">Tap the heart. The gesture paints first.</span>';
+            return;
+          }
+          likeLog.textContent = lang() === 'zh'
+            ? '主线程先接住了点击。后台线程提交了 ' + shownLikes + '。'
+            : 'Main thread caught the tap. Background thread committed ' + shownLikes + '.';
+        }
+
+        function headingText(scene) {
+          var head = scene.querySelector('h1, h2');
+          if (!head) return '';
+          var shown = head.querySelector('.' + lang());
+          return (shown || head).innerText.replace(/\s+/g, ' ').trim();
+        }
+
+        function show(nextIndex, historyMode) {
+          if (nextIndex < 0 || nextIndex >= ORDER.length) return;
+          if (nextIndex === index && historyMode === 'push') return;
+          index = nextIndex;
+          scenes.forEach(function (scene, i) {
+            var on = i === index;
+            scene.classList.toggle('is-on', on);
+            if (on) scene.removeAttribute('inert');
+            else scene.setAttribute('inert', '');
+          });
+          meter.querySelectorAll('button').forEach(function (btn, i) {
+            if (i === index) btn.setAttribute('aria-current', 'step');
+            else btn.removeAttribute('aria-current');
+            btn.classList.toggle('is-done', i < index);
+          });
+          prev.disabled = index === 0;
+          next.hidden = index === ORDER.length - 1;
+          document.getElementById('stage').style.transform =
+            'translateY(' + -index * 100 + '%)';
+          var hash = '#' + ORDER[index];
+          if (historyMode === 'push') history.pushState({ i: index }, '', hash);
+          else if (historyMode === 'replace') history.replaceState({ i: index }, '', hash);
+          live.textContent = headingText(scenes[index]);
+        }
+
+        function go(dir) {
+          if (lock) return;
+          var nextIndex = index + dir;
+          if (nextIndex < 0 || nextIndex >= ORDER.length) return;
+          lock = true;
+          show(nextIndex, 'push');
+          window.setTimeout(function () {
+            lock = false;
+          }, reduce ? 0 : 640);
+        }
+
+        function scrollerConsumes(delta) {
+          var scroller = document.querySelector('.scene.is-on .scene-inner');
+          if (!scroller || scroller.scrollHeight <= scroller.clientHeight + 2) return false;
+          if (delta > 0 && scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2) return true;
+          if (delta < 0 && scroller.scrollTop > 2) return true;
+          return false;
+        }
+
+        function runLane(node) {
+          node.classList.remove('is-run');
+          void node.offsetWidth;
+          node.classList.add('is-run');
+        }
+
+        function onLike() {
+          heart.classList.remove('pop');
+          void heart.offsetWidth;
+          heart.classList.add('pop');
+          runLane(laneMain);
+          var ticket = ++queuedLikes;
+          window.setTimeout(function () {
+            runLane(laneBg);
+            window.setTimeout(function () {
+              if (ticket < shownLikes) return;
+              shownLikes = ticket;
+              likeCount.textContent = String(shownLikes);
+              paintLikeLog();
+            }, reduce ? 40 : 460);
+          }, reduce ? 40 : 280);
+        }
+
+        function copyCommand() {
+          var text = 'npm create rspeedy@latest';
+          var done = function () {
+            var label = copyBtn.querySelector('.' + lang());
+            if (label) label.textContent = lang() === 'zh' ? '已复制' : 'Copied';
+            window.setTimeout(function () {
+              copyBtn.querySelector('.en').textContent = 'Copy';
+              copyBtn.querySelector('.zh').textContent = '复制';
+            }, 1400);
+          };
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {});
+            return;
+          }
+          var area = document.createElement('textarea');
+          area.value = text;
+          area.setAttribute('readonly', '');
+          area.style.position = 'fixed';
+          area.style.left = '-999px';
+          document.body.appendChild(area);
+          area.select();
+          try {
+            document.execCommand('copy');
+            done();
+          } catch (e) {}
+          area.remove();
+        }
+
+        document.getElementById('start').addEventListener('click', function () {
+          show(index + 1, 'push');
+        });
+        prev.addEventListener('click', function () {
+          show(index - 1, 'push');
+        });
+        next.addEventListener('click', function () {
+          show(index + 1, 'push');
+        });
+        meter.addEventListener('click', function (event) {
+          var btn = event.target.closest('[data-jump]');
+          if (!btn) return;
+          show(Number(btn.dataset.jump), 'push');
+        });
+        document.querySelectorAll('[data-set-lang]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            setLang(btn.getAttribute('data-set-lang'));
+          });
+        });
+        document.querySelectorAll('.swatch').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            setTone(btn.dataset.tone);
+          });
+        });
+        titleInput.addEventListener('input', function () {
+          titleDirty = true;
+          paintTitle();
+        });
+        likeBtn.addEventListener('click', onLike);
+        ['radius', 'angle', 'glow'].forEach(function (id) {
+          document.getElementById(id).addEventListener('input', paintCss);
+        });
+        document.getElementById('frameworks').addEventListener('click', function (event) {
+          var btn = event.target.closest('[data-fw]');
+          if (!btn) return;
+          fw = btn.dataset.fw;
+          paintFramework();
+        });
+        copyBtn.addEventListener('click', copyCommand);
+
+        var wheelAcc = 0;
+        var wheelTimer = 0;
+        window.addEventListener(
+          'wheel',
+          function (event) {
+            if (event.target.closest('pre, input, textarea')) return;
+            if (scrollerConsumes(event.deltaY)) return;
+            event.preventDefault();
+            wheelAcc += event.deltaY;
+            window.clearTimeout(wheelTimer);
+            wheelTimer = window.setTimeout(function () {
+              wheelAcc = 0;
+            }, 180);
+            if (Math.abs(wheelAcc) < 48) return;
+            var dir = wheelAcc > 0 ? 1 : -1;
+            wheelAcc = 0;
+            go(dir);
+          },
+          { passive: false },
+        );
+
+        var tracking = false;
+        var startY = 0;
+        var startX = 0;
+        window.addEventListener('pointerdown', function (event) {
+          if (event.pointerType === 'mouse') return;
+          if (event.target.closest('input, textarea, a, button, pre, [data-noswipe]')) return;
+          tracking = true;
+          startY = event.clientY;
+          startX = event.clientX;
+        });
+        window.addEventListener('pointerup', function (event) {
+          if (!tracking) return;
+          tracking = false;
+          var dy = event.clientY - startY;
+          var dx = event.clientX - startX;
+          if (Math.abs(dy) < 56 || Math.abs(dy) < Math.abs(dx)) return;
+          if (scrollerConsumes(-dy)) return;
+          go(dy < 0 ? 1 : -1);
+        });
+
+        window.addEventListener('keydown', function (event) {
+          var tag = event.target.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+          if (event.key === 'ArrowDown' || event.key === 'PageDown') {
+            event.preventDefault();
+            show(index + 1, 'push');
+          } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+            event.preventDefault();
+            show(index - 1, 'push');
+          } else if (event.key === 'Home') {
+            event.preventDefault();
+            show(0, 'push');
+          } else if (event.key === 'End') {
+            event.preventDefault();
+            show(ORDER.length - 1, 'push');
+          }
+        });
+
+        window.addEventListener('popstate', function () {
+          var id = (location.hash || '#cover').slice(1);
+          var found = ORDER.indexOf(id);
+          show(found === -1 ? 0 : found, 'none');
+        });
+
+        if (!reduce) {
+          window.addEventListener('pointermove', function (event) {
+            var x = (event.clientX / window.innerWidth) * 100;
+            var y = (event.clientY / window.innerHeight) * 100;
+            var aurora = document.getElementById('aurora');
+            aurora.style.setProperty('--gx', x + '%');
+            aurora.style.setProperty('--gy', y + '%');
+            aurora.style.setProperty('--gx2', 100 - x + '%');
+            aurora.style.setProperty('--gy2', 100 - y + '%');
+          });
+        }
+
+        var initial = ORDER.indexOf((location.hash || '').slice(1));
+        setLang(lang());
+        setTone('coral');
+        paintTitle();
+        paintCss();
+        paintFramework();
+        show(initial === -1 ? 0 : initial, 'replace');
+      })();
+    </script>
+  </body>
+</html>

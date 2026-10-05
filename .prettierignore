@@ -19,6 +19,9 @@ packages/lynx-compat-data/api-stats.json
 # self-contained static tool, not prettier-formatted
 /docs/public/debug-metadata-visualization/index.html
 
+# self-contained HTML5 story, not prettier-formatted
+/docs/public/campaign/index.html
+
 # shadcn ui CLI generated files
 src/components/ui
 
